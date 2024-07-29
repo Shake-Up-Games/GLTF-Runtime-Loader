@@ -11,4 +11,16 @@
     <ProjectReference Include="..\GLTF Runtime Loader\GLTF Runtime Loader.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="bake_result.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="monkey.bin">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="monkey.gltf">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>

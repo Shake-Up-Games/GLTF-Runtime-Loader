@@ -9,7 +9,7 @@ namespace GLTFRuntime
     /// <summary>
     /// Geometry to be rendered with the given material.
     /// </summary>    
-    [DebuggerDisplay($"{{{nameof(GetDebuggerDisplay)}(),nq}}")]
+    [DebuggerDisplay($"{{{nameof(ToString)}(),nq}}")]
     public class Primitive
     {
         /// <summary>
@@ -107,7 +107,10 @@ namespace GLTFRuntime
             };
         }
 
-        private string GetDebuggerDisplay()
+        /// <summary>
+        /// Returns a human-friendly string summarizing this primitive.
+        /// </summary>
+        public override string ToString()
         {
             if (Material == null)
                 return $"{Attributes.Values.First().Count} of ({string.Join(", ", Attributes.Keys)})";
