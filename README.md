@@ -21,4 +21,6 @@ This reader implements most parts of the glTF™ 2.0 standard, as detailed at [h
 
 Extensions, extras, sparse storage, and morph targets are among the features not yet implemented.
 
+Documentation comments are mostly copied from the specification with application-specific notes added, but there may be some discrepancies where copy-paste fatigue set in.
+
 **Pull requests are welcome!**
