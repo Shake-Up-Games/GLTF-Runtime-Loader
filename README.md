@@ -1,5 +1,5 @@
 # GLTF Runtime Loader
-A .NET 8.0 class library that uses the glTF™ 2.0 specification to read glTF files into runtime objects with the buffers read into appropriate object types.
+A .NET 8.0 class library that uses the [glTF™ 2.0 specification](https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html) to read glTF files into runtime objects with the buffers read into appropriate object types.
 
 # How to Use
 ```csharp
