@@ -8,10 +8,18 @@ using GLTFRuntime;
 
 string binPath = "<path to directory containing bin files and/or image files>";
 string filePath = "<path to gltf file>";
-glTF myFile = new GLTFRuntime.glTF(binPath, filePath);
-foreach (Mesh mesh in GLTFRuntime.Meshes)
+glTF library = new glTF(binPath, filePath);
+foreach (var mesh in library.Meshes)
 {
     Console.WriteLine(mesh.Name);
+    foreach (var primitive in mesh.Primitives)
+        Console.WriteLine($"\t{primitive}");
+}
+
+foreach (var material in library.Materials)
+{
+    Console.WriteLine(material.Name);
+    Console.WriteLine($"\t{material.PBRMetallicRoughness.BaseColorTexture?.Texture.Name ?? "Unnamed Texture"}");
 }
 ```
 
