@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.9.34701.34
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GLTF Runtime Loader", "GLTF Runtime Loader\GLTF Runtime Loader.csproj", "{0D551B01-3EA7-4B18-9AB2-22D4D9AF8561}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Example", "Example\Example.csproj", "{0011A9EF-21D4-4484-A7D9-A62CAE4881FC}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{0D551B01-3EA7-4B18-9AB2-22D4D9AF8561}.Debug|Any CPU.ActiveCfg = Release|Any CPU
+		{0D551B01-3EA7-4B18-9AB2-22D4D9AF8561}.Debug|Any CPU.Build.0 = Release|Any CPU
+		{0D551B01-3EA7-4B18-9AB2-22D4D9AF8561}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0D551B01-3EA7-4B18-9AB2-22D4D9AF8561}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0011A9EF-21D4-4484-A7D9-A62CAE4881FC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0011A9EF-21D4-4484-A7D9-A62CAE4881FC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0011A9EF-21D4-4484-A7D9-A62CAE4881FC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0011A9EF-21D4-4484-A7D9-A62CAE4881FC}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {C0A92FA1-A0F3-4CC9-A628-87DCE5E1E07F}
+	EndGlobalSection
+EndGlobal
