@@ -7,6 +7,46 @@ using System.Text.RegularExpressions;
 namespace GLTFRuntime
 {
     /// <summary>
+    /// Describes a vertex attribute for use in creating vertex elements.
+    /// </summary>
+    [DebuggerDisplay($"{{{nameof(ToString)}(),nq}}")]
+    public readonly struct VertexAttribute
+    {
+        /// <summary>
+        /// The attribute type for this vertex attribute.
+        /// </summary>
+        public readonly PrimitiveAttributes Type;
+
+        /// <summary>
+        /// The usage index for this vertex attribute, or null if none was specified.
+        /// <para>For example, if the library specifies TEXCOORD_1, this is 1.</para>
+        /// </summary>
+        public readonly int? UsageIndex;
+
+        /// <summary>
+        /// Constructs a new vertex attribute.
+        /// </summary>
+        /// <param name="type">The type of primitive this attribute represents.</param>
+        /// <param name="usageIndex">An optional usage index.</param>
+        internal VertexAttribute(PrimitiveAttributes type, int? usageIndex)
+        {
+            Type = type;
+            UsageIndex = usageIndex;
+        }
+
+        /// <summary>
+        /// Returns a human-friendly string representation of this attribute.
+        /// </summary>
+        public override string ToString()
+        {
+            if (UsageIndex == null)
+                return Type.ToString();
+            else
+                return $"{Type}_{UsageIndex}";
+        }
+    }
+
+    /// <summary>
     /// Geometry to be rendered with the given material.
     /// </summary>    
     [DebuggerDisplay($"{{{nameof(ToString)}(),nq}}")]
@@ -16,7 +56,7 @@ namespace GLTFRuntime
         /// A read-only dictionary where each key corresponds to a mesh attribute semantic
         /// and each value is the attribute’s data.
         /// </summary>
-        public ReadOnlyDictionary<string, ReadOnlyCollection<object>> Attributes { get; }
+        public ReadOnlyDictionary<VertexAttribute, ReadOnlyCollection<object>> Attributes { get; }
 
         /// <summary>
         /// The vertex indices. When this is null, the primitive defines non-indexed geometry.
@@ -40,23 +80,27 @@ namespace GLTFRuntime
 
         internal Primitive(JsonNode source, Accessor[] accessors, ReadOnlyCollection<Material> materials)
         {
-            Dictionary<string, ReadOnlyCollection<object>> attributes = new Dictionary<string, ReadOnlyCollection<object>>();
+            Dictionary<VertexAttribute, ReadOnlyCollection<object>> attributes = new Dictionary<VertexAttribute, ReadOnlyCollection<object>>();
             var attributesNode = source["attributes"]!.AsObject();
             foreach (var attributeName in attributesNode)
             {
                 string key = attributeName.Key;
-                string keyTypeString = key.ToString();
-                var index = indexEnd.Match(keyTypeString);
+                int? usageIndex = null;
+                string keyTypeString;
+                var index = indexEnd.Match(key);
                 if (index.Success)
                 {
-                    keyTypeString = keyTypeString.Substring(0, index.Index);
+                    keyTypeString = key.Substring(0, index.Index);
+                    usageIndex = int.Parse(key.Substring(index.Index + 1));
                 }
+                else
+                    keyTypeString = key;
                 var keyType = Enum.Parse<PrimitiveAttributes>(keyTypeString);
                 var data = accessors[attributeName.Value!.GetValue<int>()].Data;
-                attributes.Add(key, CastAsPrimitiveData(keyType, data));
+                attributes.Add(new VertexAttribute(keyType, usageIndex), CastAsPrimitiveData(keyType, data));
             }
 
-            Attributes = new ReadOnlyDictionary<string, ReadOnlyCollection<object>>(attributes);
+            Attributes = new ReadOnlyDictionary<VertexAttribute, ReadOnlyCollection<object>>(attributes);
 
             int? indicesIndex = source["indices"]?.GetValue<int>();
             if (indicesIndex != null)

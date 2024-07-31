@@ -12,15 +12,16 @@
 		<Title>GLTF Runtime Loader by Shake Up Games</Title>
 		<Authors>mghoffmann</Authors>
 		<Company>Shake Up Games</Company>
-		<PackageId>ShakeUpGames.GTLF.Runtime</PackageId>
+		<PackageId>ShakeUpGames.GLTF.Runtime</PackageId>
 		<Description>A .NET 8.0 class library that uses the glTF™ 2.0 specification to read glTF files into runtime objects with the buffers read into appropriate object types.</Description>
 		<Copyright>2024 Shake Up Games</Copyright>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<PackageLicenseFile>LICENSE</PackageLicenseFile>
 		<RepositoryType>git</RepositoryType>
 		<RepositoryUrl>https://github.com/Shake-Up-Games/GLTF-Runtime-Loader</RepositoryUrl>
-		<PackageTags>gltf; 3D; scene; game</PackageTags>
+		<PackageTags>gltf; 3D; scene; game; MonoGame</PackageTags>
 		<IncludeSymbols>False</IncludeSymbols>
+		<Version>0.0.2</Version>
 	</PropertyGroup>
 
 	<ItemGroup>
