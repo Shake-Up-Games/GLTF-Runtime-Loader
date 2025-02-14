@@ -12,7 +12,7 @@ namespace GLTFRuntime
         /// The index of the texture.
         /// </summary>
         public Texture Texture { get; }
-                
+
         /// <summary>
         /// The set index of texture’s TEXCOORD attribute used for texture coordinate mapping.
         /// </summary>

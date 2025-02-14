@@ -1,0 +1,28 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>net8.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<EnableNETAnalyzers>true</EnableNETAnalyzers>
+		<EnforceCodeStyleInBuild>True</EnforceCodeStyleInBuild>
+		<AnalysisLevel>6.0-all</AnalysisLevel>
+		<GenerateDocumentationFile>true</GenerateDocumentationFile>
+		<NoDefaultExcludes>true</NoDefaultExcludes>
+	</PropertyGroup>
+
+	<PropertyGroup>
+		<PackageId>ShakeUpGames.Common3D</PackageId>
+		<Version>1.0.0</Version>
+		<Authors>mghoffmann</Authors>
+		<Company>Shake Up Games</Company>
+		<Description>Core data structures shared by multiple projects and packages, including Shake Up Engine and GLTF Runtime Loader.</Description>
+		<RepositoryUrl>https://github.com/Shake-Up-Games/GLTF-Runtime-Loader</RepositoryUrl>
+		<PackageOutputPath>$(OutputPath)</PackageOutputPath>
+		<Title>Shake Up Games Common 3D</Title>
+		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+		<Copyright>Copyright 2025 Shake Up Games. All rights reserved. Unauthorized use is prohibited.</Copyright>
+		<RepositoryType>git</RepositoryType>
+	</PropertyGroup>
+
+</Project>

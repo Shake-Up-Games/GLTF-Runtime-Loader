@@ -36,7 +36,7 @@ namespace GLTFRuntime
         /// <summary>
         /// A read-only collection of meshes.
         /// </summary>
-        public ReadOnlyCollection<Mesh> Meshes { get; }
+        public ReadOnlyDictionary<string, Mesh> Meshes { get; }
 
         /// <summary>
         /// A read-only collection of nodes.
@@ -81,7 +81,7 @@ namespace GLTFRuntime
 
             JsonNode? camerasNode = root["cameras"];
             if (camerasNode == null)
-                Cameras = ReadOnlyCollection<Camera>.Empty;
+                Cameras = new ReadOnlyCollection<Camera>(new List<Camera>());
             else
                 Cameras = new ReadOnlyCollection<Camera>((from c in camerasNode.AsArray() select Camera.Create(c)).ToList());
 
@@ -91,7 +91,7 @@ namespace GLTFRuntime
 
             JsonNode? nodesNode = root["nodes"];
             if (nodesNode == null)
-                Nodes = ReadOnlyCollection<Node>.Empty;
+                Nodes = new ReadOnlyCollection<Node>(new List<Node>());
             else
             {
                 var nodesArray = nodesNode!.AsArray();
@@ -103,7 +103,10 @@ namespace GLTFRuntime
                     {
                         List<Node> childNodes = new List<Node>();
                         foreach (var childIndex in from c in children select c.GetValue<int>())
+                        {
                             childNodes.Add(nodes[childIndex]);
+                            nodes[childIndex].Parent = nodes[i];
+                        }
                         nodes[i].Children = new ReadOnlyCollection<Node>(childNodes);
                     }
                 }
@@ -113,7 +116,7 @@ namespace GLTFRuntime
 
             JsonArray? scenesNode = root["scenes"]?.AsArray();
             if (scenesNode == null)
-                Scenes = ReadOnlyCollection<Scene>.Empty;
+                Scenes = new ReadOnlyCollection<Scene>(new List<Scene>());
             else
                 Scenes = new((from s in scenesNode select new Scene(s, Nodes)).ToList());
 
@@ -125,43 +128,45 @@ namespace GLTFRuntime
 
             var imagesNode = root["images"];
             if (imagesNode == null)
-                Images = ReadOnlyCollection<Image>.Empty;
+                Images = new ReadOnlyCollection<Image>(new List<Image>());
             else
                 Images = new((from i in imagesNode.AsArray() select new Image(i, bufferViews, binDirectory)).ToList());
 
             var samplersNode = root["samplers"];
             if (samplersNode == null)
-                Samplers = ReadOnlyCollection<TextureSampler>.Empty;
+                Samplers = new ReadOnlyCollection<TextureSampler>(new List<TextureSampler>());
             else
                 Samplers = new ReadOnlyCollection<TextureSampler>((from s in samplersNode.AsArray() select new TextureSampler(s)).ToList());
 
             var texturesNode = root["textures"];
             if (texturesNode == null)
-                Textures = ReadOnlyCollection<Texture>.Empty;
+                Textures = new ReadOnlyCollection<Texture>(new List<Texture>());
             else
                 Textures = new ReadOnlyCollection<Texture>((from t in texturesNode.AsArray() select new Texture(t, Samplers!, Images!)).ToList());
 
             JsonNode materialsNode = root["materials"]!;
             if (materialsNode == null)
-                Materials = ReadOnlyCollection<Material>.Empty;
+                Materials = new ReadOnlyCollection<Material>(new List<Material>());
             else
                 Materials = new ReadOnlyCollection<Material>((from m in materialsNode.AsArray() select new Material(m, Textures)).ToList());
 
             JsonNode? meshesNode = root["meshes"];
             if (meshesNode == null)
-                Meshes = ReadOnlyCollection<Mesh>.Empty;
+                Meshes = new ReadOnlyDictionary<string, Mesh>(new Dictionary<string, Mesh>());
             else
-                Meshes = new ReadOnlyCollection<Mesh>((from m in meshesNode.AsArray() select new Mesh(m, accessors, Materials)).ToList());
+                Meshes = new ReadOnlyDictionary<string, Mesh>(
+                    (from m in meshesNode.AsArray() select new Mesh(m, accessors, Materials)).ToDictionary(m => m.Name)
+                    );
 
             JsonNode? skinsNode = root["skins"];
             if (skinsNode == null)
-                Skins = ReadOnlyCollection<Skin>.Empty;
+                Skins = new ReadOnlyCollection<Skin>(new List<Skin>());
             else
                 Skins = new ReadOnlyCollection<Skin>((from s in skinsNode.AsArray() select new Skin(s, Nodes, accessors)).ToList());
 
             var animationsNode = root["animations"];
             if (animationsNode == null)
-                Animations = ReadOnlyCollection<Animation>.Empty;
+                Animations = new ReadOnlyCollection<Animation>(new List<Animation>());
             else
                 Animations = new ReadOnlyCollection<Animation>((from a in animationsNode.AsArray() select new Animation(a, Nodes, accessors)).ToList());
         }

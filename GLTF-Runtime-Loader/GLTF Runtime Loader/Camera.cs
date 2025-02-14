@@ -1,7 +1,5 @@
 ﻿using System.Diagnostics;
-using System.Numerics;
 using System.Text.Json.Nodes;
-using System.Xml.Linq;
 
 namespace GLTFRuntime
 {
@@ -21,9 +19,9 @@ namespace GLTFRuntime
     }
 
     /// <summary>
-    /// A camera’s projection.A <see cref="Node"/> MAY reference a camera to apply a transform to place the camera in the scene.
+    /// A camera’s projection. A <see cref="Node"/> MAY reference a camera to apply a transform to place the camera in the scene.
     /// </summary>
-        [DebuggerDisplay($"{{{nameof(GetDebuggerDisplay)}(),nq}}")]
+    [DebuggerDisplay($"{{{nameof(GetDebuggerDisplay)}(),nq}}")]
     public abstract class Camera
     {
         /// <summary>

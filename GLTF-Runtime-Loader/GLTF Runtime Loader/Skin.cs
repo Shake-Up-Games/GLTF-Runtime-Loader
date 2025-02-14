@@ -7,7 +7,7 @@ namespace GLTFRuntime
     /// <summary>
     /// Joints and matrices defining a skin.
     /// </summary>
-    [DebuggerDisplay($"{{{nameof(GetDebuggerDisplay)}(),nq}}")]
+    [DebuggerDisplay($"{{{nameof(ToString)}(),nq}}")]
     public sealed class Skin
     {
         /// <summary>
@@ -36,6 +36,9 @@ namespace GLTFRuntime
         {
             Name = source["name"]?.GetValue<string>();
 
+            var jointIndices = GLTFHelpers.GetDataFromArray<int>(source["joints"]!.AsArray());
+            Joints = new ReadOnlyCollection<Node>((from index in jointIndices select nodes[index]).ToList());
+
             var ibmNode = source["inverseBindMatrices"];
             if (ibmNode != null)
             {
@@ -46,13 +49,25 @@ namespace GLTFRuntime
                      select new ReadOnlyCollection<float>((from value in matrix select (float)value).ToList())
                     ).ToList()
                     );
+
+                int skinIndex = source.GetElementIndex();
+                for (int i = 0; i < jointIndices.Length; i++)
+                {
+                    nodes[jointIndices[i]].InverseBindMatrices[skinIndex] = InverseBindMatrices[i];
+                }
             }
 
-            var jointIndices = GLTFHelpers.GetDataFromArray<int>(source["joints"]!.AsArray());
-            Joints = new ReadOnlyCollection<Node>((from index in jointIndices select nodes[index]).ToList());
+            int? skeleton = GLTFHelpers.ExtractInt(source, "skeleton");
+            if (skeleton.HasValue)
+                Skeleton = Joints[skeleton.Value];
+            else
+                Skeleton = Joints.SingleOrDefault(j => j.Parent == null || j.Parent.NoTransform);
         }
 
-        private string GetDebuggerDisplay()
+        /// <summary>
+        /// Returns a human-friendly string representation of this skin.
+        /// </summary>
+        public override string ToString()
         {
             if (Name == null)
                 return $"{Joints.Count} joint{GLTFHelpers.PluralS(Joints.Count)}";

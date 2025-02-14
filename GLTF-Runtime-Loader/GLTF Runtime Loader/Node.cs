@@ -44,6 +44,18 @@ namespace GLTFRuntime
         /// The index of this node in the file's "nodes" array.
         /// </summary>
         public int Index { get; }
+
+        /// <summary>
+        /// Gets this node's parent, or null if it has no parent.
+        /// </summary>
+        public Node? Parent { get; internal set; }
+        internal bool NoTransform => Translation == null && Scale == null && Rotation == null;
+
+        /// <summary>
+        /// Gets the inverse bind matrices for this joint node, for each of the skins in the library.
+        /// </summary>
+        public Dictionary<int, ReadOnlyCollection<float>> InverseBindMatrices { get; internal set; } = new Dictionary<int, ReadOnlyCollection<float>>();
+
         internal Node(JsonNode source)
         {
             Name = source["name"]!.GetValue<string>();

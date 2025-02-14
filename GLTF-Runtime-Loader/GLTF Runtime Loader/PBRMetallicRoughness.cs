@@ -37,7 +37,7 @@ namespace GLTFRuntime
         {
             var colorNode = source["baseColorFactor"];
             if (colorNode == null)
-                BaseColorFactor = [0f, 0f, 0f, 0f];
+                BaseColorFactor = new float[4] { 0f, 0f, 0f, 0f };
             else
                 BaseColorFactor = GLTFHelpers.GetDataFromArray<float>(colorNode.AsArray());
 
@@ -54,7 +54,7 @@ namespace GLTFRuntime
         }
 
         internal PBRMetallicRoughness()
-            : this(JsonNode.Parse("{}")!, ReadOnlyCollection<Texture>.Empty)
+            : this(JsonNode.Parse("{}")!, new ReadOnlyCollection<Texture>(new List<Texture>()))
         {
         }
     }
