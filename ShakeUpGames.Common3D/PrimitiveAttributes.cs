@@ -1,7 +1,7 @@
 ﻿namespace ShakeUpGames.Common3D
 {
     /// <summary>
-    /// An enumeration of some of the attributes that may appear in <see cref="Primitive.Attributes"/>.
+    /// An enumeration of primitive vertex attributes that may be used in the structures of a shader.
     /// </summary>
     public enum PrimitiveAttributes
     {

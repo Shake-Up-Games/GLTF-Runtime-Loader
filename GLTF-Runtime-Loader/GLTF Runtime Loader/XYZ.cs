@@ -27,7 +27,7 @@ namespace GLTFRuntime
         /// </summary>
         public XYZ(float[] array)
         {
-            ArgumentNullException.ThrowIfNull(array, nameof(array));
+            ArgumentNullException.ThrowIfNull(array);
             if (array.Length != 3)
                 throw new ArgumentException($"{nameof(array)} must have a length of 3.");
             X = array[0];
@@ -59,7 +59,7 @@ namespace GLTFRuntime
         /// </summary>
         public static XYZ FromArray(float[] array)
         {
-            ArgumentNullException.ThrowIfNull(array, nameof(array));
+            ArgumentNullException.ThrowIfNull(array);
             return new XYZ(array[0], array[1], array[2]);
         }
 
