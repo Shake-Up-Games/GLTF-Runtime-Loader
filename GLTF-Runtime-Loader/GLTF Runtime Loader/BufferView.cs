@@ -1,5 +1,4 @@
-﻿using System.Reflection;
-using System.Text.Json.Nodes;
+﻿using System.Text.Json.Nodes;
 
 namespace GLTFRuntime
 {
@@ -51,18 +50,21 @@ namespace GLTFRuntime
         }
 
 
-        internal object[][] Read(AccessorDataType dataType, AccessorComponentType componentType, int count)
+        /// <summary>
+        /// Reads <paramref name="count"/> elements of the given <paramref name="dataType"/>/<paramref name="componentType"/> out of this buffer view.
+        /// </summary>
+        /// <param name="dataType">Whether each element is a scalar, vector, or matrix, which determines how many components it has.</param>
+        /// <param name="componentType">The datatype of each component, which determines its byte size and how it is decoded.</param>
+        /// <param name="count">The number of elements to read.</param>
+        /// <param name="byteOffset">An additional byte offset into this buffer view, e.g. an accessor's own byteOffset property, or the byteOffset of a sparse accessor's indices/values sub-object. Defaults to 0.</param>
+        internal object[][] Read(AccessorDataType dataType, AccessorComponentType componentType, int count, int byteOffset = 0)
         {
-            var span = new Span<byte>(Buffer.Bytes, ByteOffset, ByteLength).ToArray();
+            var span = new Span<byte>(Buffer.Bytes, ByteOffset + byteOffset, ByteLength - byteOffset).ToArray();
 
             // The dimensions of each inner array
-            var componentCount =
-                typeof(AccessorDataType).GetField(dataType.ToString(), BindingFlags.Public | BindingFlags.Static)!
-                .GetCustomAttribute<ComponentCountAttribute>()!.ComponentCount;
+            var componentCount = GLTFHelpers.GetComponentCount(dataType);
             // Attributes for determining the type of reader and the size of the component type
-            var ctAttributes =
-                typeof(AccessorComponentType).GetField(componentType.ToString(), BindingFlags.Public | BindingFlags.Static)!
-                .GetCustomAttribute<ComponentTypeAttribute>()!;
+            var ctAttributes = GLTFHelpers.GetComponentTypeInfo(componentType);
 
             Func<byte[], int, ValueType> reader =
                 componentType switch

@@ -27,7 +27,9 @@ foreach (var material in library.Materials)
 
 This reader implements most parts of the glTF™ 2.0 standard, as detailed at [https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html](https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html).
 
-Extensions, extras, sparse storage, and morph targets are among the features not yet implemented.
+Morph targets (`primitive.targets`) and sparse accessor storage are now implemented, including a small, non-standard `extras.SUE_tintColor` convention on individual morph targets for consumers that want to blend a color alongside a target's geometry (see the XML docs on `MorphTarget.TintColor` for the exact format and a caveat about authoring it in Blender).
+
+Beyond that one convention, general `extras` and `extensions` support (i.e. reading arbitrary/registered extension data anywhere else in the file) is still not implemented.
 
 Documentation comments are mostly copied from the specification with application-specific notes added, but there may be some discrepancies where copy-paste fatigue set in.
 

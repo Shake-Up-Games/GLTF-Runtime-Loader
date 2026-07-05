@@ -45,6 +45,18 @@ namespace GLTFRuntime
         public TopologyMode Mode { get; }
 
         /// <summary>
+        /// An array of morph targets, or null if this primitive defines none.
+        /// <para>Each target is a set of per-vertex displacements (deltas) for POSITION, NORMAL, and/or TANGENT, to be
+        /// added to this primitive's base <see cref="Attributes"/> and scaled by a weight to animate the mesh without
+        /// skinning (e.g. Blender "shape keys"). See <see cref="MorphTarget"/> for details, including an optional,
+        /// non-standard tint-color convention this library defines for use by consumers that need to blend a color
+        /// alongside a target's geometry.</para>
+        /// <para>The number and order of elements in this array corresponds to the owning <see cref="Mesh"/>'s
+        /// <see cref="Mesh.Weights"/> array, when present: the i-th weight applies to the i-th target.</para>
+        /// </summary>
+        public ReadOnlyCollection<MorphTarget>? Targets { get; }
+
+        /// <summary>
         /// A regex matching attributes strings that  end in _ and a number.
         /// </summary>
         static readonly Regex indexEnd = new Regex(@"_\d$");
@@ -97,22 +109,27 @@ namespace GLTFRuntime
 
             Mode = (TopologyMode)(source["mode"]?.GetValue<int>() ?? (int)TopologyMode.TRIANGLES);
 
-            // TODO: Implement morph targets with the targets property here. Finding a gltf model with morph targets would help.
+            var targetsNode = source["targets"]?.AsArray();
+            if (targetsNode != null)
+                Targets = new ReadOnlyCollection<MorphTarget>((from targetNode in targetsNode select new MorphTarget(targetNode!, accessors)).ToList());
         }
 
         /// <summary>
         /// Casts a collection of collections of objects into a collection of arrays of specific types of objects to match a type of primitive.
+        /// <para>The array size for each element is taken from the accessor data itself (i.e. from each vector's own length)
+        /// rather than being hard-coded per attribute, since some attributes are not a fixed size: for example TANGENT is
+        /// a VEC4 (XYZ + handedness) when used as a base primitive attribute, but a VEC3 (XYZ only) when used as a morph
+        /// target displacement, per the glTF 2.0 specification.</para>
         /// </summary>
-        private static ReadOnlyCollection<object> CastAsPrimitiveData(PrimitiveAttributes key, ReadOnlyCollection<ReadOnlyCollection<object>> data)
+        internal static ReadOnlyCollection<object> CastAsPrimitiveData(PrimitiveAttributes key, ReadOnlyCollection<ReadOnlyCollection<object>> data)
         {
-            ReadOnlyCollection<object> castAsArrays<T>(ReadOnlyCollection<ReadOnlyCollection<object>> data, int arraySize)
+            ReadOnlyCollection<object> castAsArrays<T>(ReadOnlyCollection<ReadOnlyCollection<object>> data)
             {
                 List<object> casted = new List<object>();
                 foreach (var vector in data)
                 {
-                    T[] r = new T[arraySize];
-                    Type t = vector[0].GetType();
-                    for (int i = 0; i < arraySize; i++)
+                    T[] r = new T[vector.Count];
+                    for (int i = 0; i < vector.Count; i++)
                     {
                         r[i] = (T)vector[i];
                     }
@@ -122,10 +139,10 @@ namespace GLTFRuntime
             };
             return key switch
             {
-                PrimitiveAttributes.POSITION or PrimitiveAttributes.NORMAL => castAsArrays<float>(data, 3),
-                PrimitiveAttributes.TEXCOORD => castAsArrays<float>(data, 2),
-                PrimitiveAttributes.JOINTS => castAsArrays<byte>(data, 4),
-                PrimitiveAttributes.WEIGHTS => castAsArrays<float>(data, 4),
+                PrimitiveAttributes.POSITION or PrimitiveAttributes.NORMAL or PrimitiveAttributes.TANGENT => castAsArrays<float>(data),
+                PrimitiveAttributes.TEXCOORD => castAsArrays<float>(data),
+                PrimitiveAttributes.JOINTS => castAsArrays<byte>(data),
+                PrimitiveAttributes.WEIGHTS => castAsArrays<float>(data),
                 _ => throw new NotImplementedException(),
             };
         }
