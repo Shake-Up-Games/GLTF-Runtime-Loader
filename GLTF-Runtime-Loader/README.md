@@ -32,3 +32,7 @@ Extensions, extras, sparse storage, and morph targets are among the features not
 Documentation comments are mostly copied from the specification with application-specific notes added, but there may be some discrepancies where copy-paste fatigue set in.
 
 **Pull requests are welcome!**
+
+# TODO
+
+- Run a full code-cleanup pass: convert to file-scoped namespaces, resolve compiler/analyzer warnings, apply suggested `readonly`/nullable-annotation fixes, etc. Not urgent — a large, mechanical style pass across the whole library, best done as its own dedicated change rather than mixed into a feature PR.
