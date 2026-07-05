@@ -17,6 +17,10 @@ namespace GLTFRuntime
 
         /// <summary>
         /// Array of weights to be applied to the morph targets. The number of array elements MUST match the number of morph targets.
+        /// <para>Element <c>i</c> is the default weight for the <c>i</c>-th entry of each of this mesh's <see cref="Primitive"/>s'
+        /// <see cref="Primitive.Targets"/> collections (every primitive in a mesh MUST define the same number of morph targets,
+        /// per the glTF 2.0 specification). This library only surfaces the weight values read from the file; applying them
+        /// (e.g. per-frame, overridden by an animation channel, or driven by application logic) is left to the consumer.</para>
         /// </summary>
         public float[]? Weights { get; set; }
 

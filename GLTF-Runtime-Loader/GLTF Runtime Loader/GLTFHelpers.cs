@@ -53,6 +53,24 @@ namespace GLTFRuntime
             return r;
         }
 
+        /// <summary>
+        /// Gets the number of components (e.g. 3 for VEC3) that make up a single element of the given accessor data type.
+        /// </summary>
+        internal static int GetComponentCount(AccessorDataType dataType)
+        {
+            return typeof(AccessorDataType).GetField(dataType.ToString(), BindingFlags.Public | BindingFlags.Static)!
+                .GetCustomAttribute<ComponentCountAttribute>()!.ComponentCount;
+        }
+
+        /// <summary>
+        /// Gets the runtime CLR type and byte size that correspond to the given accessor component type.
+        /// </summary>
+        internal static ComponentTypeAttribute GetComponentTypeInfo(AccessorComponentType componentType)
+        {
+            return typeof(AccessorComponentType).GetField(componentType.ToString(), BindingFlags.Public | BindingFlags.Static)!
+                .GetCustomAttribute<ComponentTypeAttribute>()!;
+        }
+
         internal static Nullable<int> ExtractInt(JsonNode source, string property)
         {
             var propertyNode = source[property];

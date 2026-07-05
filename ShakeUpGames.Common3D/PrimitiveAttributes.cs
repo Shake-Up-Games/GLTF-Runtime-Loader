@@ -14,6 +14,11 @@
         /// </summary>
         NORMAL,
         /// <summary>
+        /// The tangent attribute.
+        /// <para>On a primitive's base attributes, this is a 4-component value (XYZ tangent plus a W sign for handedness). On a morph target, per the glTF 2.0 specification, this is a 3-component displacement with no W component.</para>
+        /// </summary>
+        TANGENT,
+        /// <summary>
         /// A texture coordinate attribute.
         /// </summary>
         TEXCOORD,
