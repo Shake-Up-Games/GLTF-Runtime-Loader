@@ -22,8 +22,17 @@ namespace GLTFRuntime
 
         /// <summary>
         /// The vertex indices. When this is null, the primitive defines non-indexed geometry.
+        /// Boxed as whichever integer type <see cref="IndexType"/> reports - glTF allows index accessors to be
+        /// unsigned byte, unsigned short, or unsigned int (never a signed type or float), so a single fixed
+        /// element type isn't wide enough for every legal mesh (e.g. more than 65535 vertices needs uint indices).
         /// </summary>
-        public Collection<ushort>? Indices { get; }
+        public ReadOnlyCollection<object>? Indices { get; }
+
+        /// <summary>
+        /// Gets the runtime type of the integers boxed in <see cref="Indices"/> (<see cref="byte"/>,
+        /// <see cref="ushort"/>, or <see cref="uint"/>), or null if <see cref="Indices"/> is null or empty.
+        /// </summary>
+        public Type? IndexType => Indices?.FirstOrDefault()?.GetType();
 
         /// <summary>
         /// The material to apply to this primitive when rendering.
@@ -39,6 +48,14 @@ namespace GLTFRuntime
         /// A regex matching attributes strings that  end in _ and a number.
         /// </summary>
         static readonly Regex indexEnd = new Regex(@"_\d$");
+
+        /// <summary>
+        /// The only <see cref="AccessorComponentType"/> values the glTF 2.0 specification allows for an index
+        /// accessor - unsigned byte, unsigned short, or unsigned int. Signed integer types and float are not legal
+        /// here even though they're legal <see cref="AccessorComponentType"/> values for other accessor uses.
+        /// </summary>
+        static readonly AccessorComponentType[] indexAccessorTypes =
+            [AccessorComponentType.Byte, AccessorComponentType.UShort, AccessorComponentType.UInt];
 
         internal Primitive(JsonNode source, Accessor[] accessors, ReadOnlyCollection<Material> materials)
         {
@@ -68,10 +85,10 @@ namespace GLTFRuntime
             if (indicesIndex != null)
             {
                 Accessor indexAccessor = accessors[indicesIndex.Value];
-                if (!(indexAccessor.Type == AccessorDataType.SCALAR && indexAccessor.ComponentType == AccessorComponentType.UShort))
-                    throw new InvalidOperationException("The index accessor does not define a scalar ushort array.");
+                if (indexAccessor.Type != AccessorDataType.SCALAR || !indexAccessorTypes.Contains(indexAccessor.ComponentType))
+                    throw new InvalidOperationException("The index accessor does not define a scalar unsigned byte, unsigned short, or unsigned int array.");
 
-                Indices = new Collection<ushort>((from vector in indexAccessor.Data select (ushort)vector[0]).ToList());
+                Indices = new ReadOnlyCollection<object>((from vector in indexAccessor.Data select vector[0]).ToList());
             }
 
             var materialIndex = source["material"]?.GetValue<int>();
