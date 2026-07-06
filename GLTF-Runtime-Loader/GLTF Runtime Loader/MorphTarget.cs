@@ -82,8 +82,8 @@ namespace GLTFRuntime
                 if (!legalTargetAttributes.Contains(keyType))
                     throw new InvalidOperationException($"'{attribute.Key}' is not a legal morph target attribute. The glTF 2.0 specification only permits POSITION, NORMAL, and TANGENT on morph targets.");
 
-                var data = accessors[attribute.Value!.GetValue<int>()].Data;
-                attributes.Add(new VertexAttribute(keyType, null), Primitive.CastAsPrimitiveData(keyType, data));
+                var accessor = accessors[attribute.Value!.GetValue<int>()];
+                attributes.Add(new VertexAttribute(keyType, null), Primitive.CastAsPrimitiveData(keyType, accessor.ComponentType, accessor.Data));
             }
 
             Attributes = new ReadOnlyDictionary<VertexAttribute, ReadOnlyCollection<object>>(attributes);

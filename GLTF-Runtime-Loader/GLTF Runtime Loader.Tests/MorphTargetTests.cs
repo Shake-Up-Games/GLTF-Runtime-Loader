@@ -112,13 +112,13 @@ namespace GLTF_Runtime_Loader.Tests
         {
             var (baseTangent, baseBuffer) = Vec4Accessor(new float[] { 1f, 0f, 0f, -1f });
             using var _b = baseBuffer;
-            var baseRow = (float[])Primitive.CastAsPrimitiveData(PrimitiveAttributes.TANGENT, baseTangent.Data)[0];
+            var baseRow = (float[])Primitive.CastAsPrimitiveData(PrimitiveAttributes.TANGENT, AccessorComponentType.Float, baseTangent.Data)[0];
             Assert.Equal(4, baseRow.Length);
             Assert.Equal(new float[] { 1f, 0f, 0f, -1f }, baseRow);
 
             var (targetTangent, targetBuffer) = Vec3Accessor(new float[] { 1f, 0f, 0f });
             using var _t = targetBuffer;
-            var targetRow = (float[])Primitive.CastAsPrimitiveData(PrimitiveAttributes.TANGENT, targetTangent.Data)[0];
+            var targetRow = (float[])Primitive.CastAsPrimitiveData(PrimitiveAttributes.TANGENT, AccessorComponentType.Float, targetTangent.Data)[0];
             Assert.Equal(3, targetRow.Length);
             Assert.Equal(new float[] { 1f, 0f, 0f }, targetRow);
         }

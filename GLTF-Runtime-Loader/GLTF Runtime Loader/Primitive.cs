@@ -87,8 +87,8 @@ namespace GLTFRuntime
                 else
                     keyTypeString = key;
                 var keyType = Enum.Parse<PrimitiveAttributes>(keyTypeString);
-                var data = accessors[attributeName.Value!.GetValue<int>()].Data;
-                attributes.Add(new VertexAttribute(keyType, usageIndex), CastAsPrimitiveData(keyType, data));
+                var accessor = accessors[attributeName.Value!.GetValue<int>()];
+                attributes.Add(new VertexAttribute(keyType, usageIndex), CastAsPrimitiveData(keyType, accessor.ComponentType, accessor.Data));
             }
 
             Attributes = new ReadOnlyDictionary<VertexAttribute, ReadOnlyCollection<object>>(attributes);
@@ -120,8 +120,23 @@ namespace GLTFRuntime
         /// rather than being hard-coded per attribute, since some attributes are not a fixed size: for example TANGENT is
         /// a VEC4 (XYZ + handedness) when used as a base primitive attribute, but a VEC3 (XYZ only) when used as a morph
         /// target displacement, per the glTF 2.0 specification.</para>
+        /// <para>Per the glTF 2.0 specification, an attribute's legal <paramref name="componentType"/> values depend on
+        /// the attribute semantic itself, not just a single hard-coded type: <c>JOINTS_n</c> accessors are legally
+        /// <see cref="AccessorComponentType.Byte"/> or <see cref="AccessorComponentType.UShort"/> (literal joint indices,
+        /// never normalized), and <c>WEIGHTS_n</c>/<c>TEXCOORD_n</c> accessors are legally <see cref="AccessorComponentType.Float"/>,
+        /// or a <i>normalized</i> <see cref="AccessorComponentType.Byte"/>/<see cref="AccessorComponentType.UShort"/> (where a raw
+        /// value of <see cref="byte.MaxValue"/>/<see cref="ushort.MaxValue"/> represents <c>1.0</c>). Passing only <paramref name="data"/>
+        /// without <paramref name="componentType"/> used to force every attribute through one hard-coded element type, which crashed
+        /// with an <see cref="InvalidCastException"/> the moment a file used a different (but equally legal) component type - which is
+        /// exactly what a real Blender-exported skinned mesh does for a normalized-unsigned-byte <c>WEIGHTS_0</c> accessor.</para>
         /// </summary>
-        internal static ReadOnlyCollection<object> CastAsPrimitiveData(PrimitiveAttributes key, ReadOnlyCollection<ReadOnlyCollection<object>> data)
+        /// <param name="key">The attribute semantic being cast, which determines the target CLR element type(s).</param>
+        /// <param name="componentType">The source accessor's own <see cref="Accessor.ComponentType"/>, needed because
+        /// <paramref name="data"/> alone does not carry this information - each boxed element's runtime type already
+        /// matches <paramref name="componentType"/> (see <see cref="BufferView.Read"/>), but only the caller knows what
+        /// that type actually is.</param>
+        /// <param name="data">The raw accessor data to cast/convert.</param>
+        internal static ReadOnlyCollection<object> CastAsPrimitiveData(PrimitiveAttributes key, AccessorComponentType componentType, ReadOnlyCollection<ReadOnlyCollection<object>> data)
         {
             ReadOnlyCollection<object> castAsArrays<T>(ReadOnlyCollection<ReadOnlyCollection<object>> data)
             {
@@ -137,12 +152,60 @@ namespace GLTFRuntime
                 }
                 return new ReadOnlyCollection<object>(casted);
             };
+
+            // JOINTS_n is legally an unsigned byte or unsigned short accessor (never normalized - these are literal
+            // joint indices). Both are widened to ushort so downstream skinning code has a single consistent type to
+            // work with, regardless of which of the two legal source component types a given file actually uses.
+            ReadOnlyCollection<object> castJointsAsUShortArrays(ReadOnlyCollection<ReadOnlyCollection<object>> data)
+            {
+                List<object> casted = new List<object>();
+                foreach (var vector in data)
+                {
+                    ushort[] r = new ushort[vector.Count];
+                    for (int i = 0; i < vector.Count; i++)
+                    {
+                        r[i] = componentType switch
+                        {
+                            AccessorComponentType.Byte => (byte)vector[i],
+                            AccessorComponentType.UShort => (ushort)vector[i],
+                            _ => throw new InvalidOperationException($"A JOINTS accessor must use an unsigned byte or unsigned short component type per the glTF 2.0 specification. Found {componentType} instead."),
+                        };
+                    }
+                    casted.Add(r);
+                }
+                return new ReadOnlyCollection<object>(casted);
+            };
+
+            // WEIGHTS_n and TEXCOORD_n are legally float, or a *normalized* unsigned byte/unsigned short, per the
+            // glTF 2.0 specification's normalized-integer convention: a raw byte value of 255 (byte.MaxValue) means
+            // 1.0, and a raw ushort value of 65535 (ushort.MaxValue) means 1.0. Float data is passed through unchanged.
+            ReadOnlyCollection<object> castAsNormalizedFloatArrays(ReadOnlyCollection<ReadOnlyCollection<object>> data)
+            {
+                List<object> casted = new List<object>();
+                foreach (var vector in data)
+                {
+                    float[] r = new float[vector.Count];
+                    for (int i = 0; i < vector.Count; i++)
+                    {
+                        r[i] = componentType switch
+                        {
+                            AccessorComponentType.Float => (float)vector[i],
+                            AccessorComponentType.Byte => (byte)vector[i] / (float)byte.MaxValue,
+                            AccessorComponentType.UShort => (ushort)vector[i] / (float)ushort.MaxValue,
+                            _ => throw new InvalidOperationException($"This attribute must use a float, normalized unsigned byte, or normalized unsigned short component type per the glTF 2.0 specification. Found {componentType} instead."),
+                        };
+                    }
+                    casted.Add(r);
+                }
+                return new ReadOnlyCollection<object>(casted);
+            };
+
             return key switch
             {
                 PrimitiveAttributes.POSITION or PrimitiveAttributes.NORMAL or PrimitiveAttributes.TANGENT => castAsArrays<float>(data),
-                PrimitiveAttributes.TEXCOORD => castAsArrays<float>(data),
-                PrimitiveAttributes.JOINTS => castAsArrays<byte>(data),
-                PrimitiveAttributes.WEIGHTS => castAsArrays<float>(data),
+                PrimitiveAttributes.TEXCOORD => castAsNormalizedFloatArrays(data),
+                PrimitiveAttributes.JOINTS => castJointsAsUShortArrays(data),
+                PrimitiveAttributes.WEIGHTS => castAsNormalizedFloatArrays(data),
                 _ => throw new NotImplementedException(),
             };
         }
