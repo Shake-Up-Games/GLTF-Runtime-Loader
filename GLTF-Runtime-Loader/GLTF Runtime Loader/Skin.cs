@@ -61,7 +61,15 @@ namespace GLTFRuntime
             if (skeleton.HasValue)
                 Skeleton = Joints[skeleton.Value];
             else
-                Skeleton = Joints.SingleOrDefault(j => j.Parent == null || j.Parent.NoTransform);
+                // No explicit "skeleton" index: infer the root as the joint with no ancestor
+                // *within this skin's own joint list* - i.e. the topmost bone of the hierarchy this
+                // skin actually uses. Checking "j.Parent.NoTransform" (whether the parent node
+                // happens to have an identity transform) is not a valid signal for this at all: any
+                // ordinary bone chain where a child bone's head sits exactly at its parent's local
+                // origin (an extremely common, unremarkable rig - e.g. two bones placed end-to-end
+                // with no offset) gives more than one joint an identity-transform parent, which used
+                // to make this Single() throw on real content that has nothing wrong with it.
+                Skeleton = Joints.SingleOrDefault(j => j.Parent is null || !Joints.Contains(j.Parent));
         }
 
         /// <summary>
