@@ -7,7 +7,7 @@ namespace Example
         static void Main(string[] args)
         {
             glTF monkey = new glTF("", "monkey.gltf");
-            foreach (var mesh in monkey.Meshes)
+            foreach (var mesh in monkey.Meshes.Values)
             {
                 Console.WriteLine(mesh.Name);
                 foreach (var primitive in mesh.Primitives)
