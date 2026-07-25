@@ -46,6 +46,12 @@ namespace GLTFRuntime
         public int Index { get; }
 
         /// <summary>
+        /// The index of the mesh this node references in the file's "meshes" array (see <see cref="glTF.MeshList"/>),
+        /// or null if this node has no mesh.
+        /// </summary>
+        public int? MeshIndex { get; }
+
+        /// <summary>
         /// Gets this node's parent, or null if it has no parent.
         /// </summary>
         public Node? Parent { get; internal set; }
@@ -60,6 +66,10 @@ namespace GLTFRuntime
         {
             Name = source["name"]!.GetValue<string>();
             Index = source.GetElementIndex();
+
+            var meshNode = source["mesh"];
+            if (meshNode != null)
+                MeshIndex = meshNode.GetValue<int>();
 
             var rotNode = source["rotation"];
             if (rotNode != null)

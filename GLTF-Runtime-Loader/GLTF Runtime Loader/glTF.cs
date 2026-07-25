@@ -39,6 +39,12 @@ namespace GLTFRuntime
         public ReadOnlyDictionary<string, Mesh> Meshes { get; }
 
         /// <summary>
+        /// A read-only, index-preserving list of meshes, in the same order as the file's "meshes" array - unlike
+        /// <see cref="Meshes"/> (keyed by name), this lets a mesh be looked up by <see cref="Node.MeshIndex"/>.
+        /// </summary>
+        public ReadOnlyCollection<Mesh> MeshList { get; }
+
+        /// <summary>
         /// A read-only collection of nodes.
         /// </summary>
         public ReadOnlyCollection<Node> Nodes { get; }
@@ -152,11 +158,16 @@ namespace GLTFRuntime
 
             JsonNode? meshesNode = root["meshes"];
             if (meshesNode == null)
+            {
                 Meshes = new ReadOnlyDictionary<string, Mesh>(new Dictionary<string, Mesh>());
+                MeshList = new ReadOnlyCollection<Mesh>(new List<Mesh>());
+            }
             else
-                Meshes = new ReadOnlyDictionary<string, Mesh>(
-                    (from m in meshesNode.AsArray() select new Mesh(m, accessors, Materials)).ToDictionary(m => m.Name)
-                    );
+            {
+                var meshList = (from m in meshesNode.AsArray() select new Mesh(m, accessors, Materials)).ToList();
+                MeshList = new ReadOnlyCollection<Mesh>(meshList);
+                Meshes = new ReadOnlyDictionary<string, Mesh>(meshList.ToDictionary(m => m.Name));
+            }
 
             JsonNode? skinsNode = root["skins"];
             if (skinsNode == null)
