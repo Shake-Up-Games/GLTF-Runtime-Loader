@@ -6,6 +6,13 @@
 		<EnableNETAnalyzers>true</EnableNETAnalyzers>
 		<GenerateDocumentationFile>true</GenerateDocumentationFile>
 		<RootNamespace>GLTF_Runtime_Loader</RootNamespace>
+		<!-- The project file's own name has a space, which the default AssemblyName (= project file
+		     name) inherits. .NET for Android packages each managed assembly as a native-library-style
+		     "lib_<AssemblyName>.dll.so" file; a space in that filename breaks its native-library
+		     loading/lookup (observed as a TypeLoadException at startup on Android - the file is
+		     genuinely present in the APK, just never found by name). No consumer references the
+		     assembly by string name (only by ProjectReference path), so this is safe everywhere else. -->
+		<AssemblyName>GLTF_Runtime_Loader</AssemblyName>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
