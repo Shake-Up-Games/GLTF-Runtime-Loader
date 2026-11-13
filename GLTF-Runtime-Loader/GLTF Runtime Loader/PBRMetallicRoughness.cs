@@ -1,4 +1,4 @@
-﻿using System.Collections.ObjectModel;
+using System.Collections.ObjectModel;
 using System.Text.Json.Nodes;
 
 namespace GLTFRuntime
@@ -37,7 +37,7 @@ namespace GLTFRuntime
         {
             var colorNode = source["baseColorFactor"];
             if (colorNode == null)
-                BaseColorFactor = new float[4] { 0f, 0f, 0f, 0f };
+                BaseColorFactor = new float[4] { 1f, 1f, 1f, 1f };
             else
                 BaseColorFactor = GLTFHelpers.GetDataFromArray<float>(colorNode.AsArray());
 
