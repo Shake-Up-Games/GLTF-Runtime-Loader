@@ -1,6 +1,6 @@
 # GLTF Runtime Loader
 
-**Indexes:** `GLTFLOADER-01`, `GLTFLOADER-02`, `GLTFLOADER-03`, `GLTFLOADER-04`, `GLTFLOADER-05`, `GLTFLOADER-06`
+**Indexes:** `GLTFLOADER-01`, `GLTFLOADER-02`, `GLTFLOADER-03`, `GLTFLOADER-04`, `GLTFLOADER-05`, `GLTFLOADER-06`, `GLTFLOADER-07`
 
 This is the behavior contract for the `GLTF Runtime Loader` package (published as
 `ShakeUpGames.GLTF.Runtime`) — a .NET class library that reads a glTF™ 2.0 file and its associated
@@ -217,6 +217,36 @@ adds (skins, node hierarchies, or anything else expressed as a subset of a large
 key off subset membership relative to the element's own ancestors, not off incidental transform/
 naming properties of those ancestors, which the fixed bug shows are not a reliable signal.
 
+## Buffer and image URI resolution — percent-decoding and data URIs
+
+**Rule.** A buffer's or image's `uri` becomes bytes in exactly one place, the internal `GltfUri.Read`
+(`GltfUri.cs`), following glTF 2.0 section 2.8 ("URIs"). A `uri` that starts with `data:` (ASCII
+case-insensitive) is an RFC 2397 data URI, `data:[<mediatype>][;base64],<data>`, and is decoded in memory:
+base64 data through base64 decoding, other data by percent-decoding to raw octets; a data URI with no comma,
+or with invalid base64 text, throws (`InvalidOperationException`, `FormatException`). An image built from a
+data URI exposes its media type as `Image.MIMEType`. Any other `uri` is a file path, resolved by
+`GltfLoadOptions.UriDecoding` (passed as `new glTF(binDirectory, fileName, options)`; the two-argument
+constructor uses `GltfLoadOptions.Default`): with `GltfUriDecoding.Standard` (the default) the percent-decoded
+path is tried first and the literal, undecoded path second (skipped when the two are equal), so `my%20texture.png`
+finds `my texture.png` and `100%25.png` finds `100%.png`; with `GltfUriDecoding.Literal` only the literal path is
+tried, exactly as releases before the option existed did. For each candidate, an image first probes it as given
+(relative to the process directory, or absolute) and then combines it with `binDirectory`; a buffer only
+combines it with `binDirectory`. When no candidate exists, `FileNotFoundException` names the uri and every
+path tried. Neither mode adds or removes any path containment, and URIs with other schemes are not rejected.
+
+**Consequence of getting it wrong, in each direction:** Reading a specification-conforming `my%20texture.png`
+literally fails with `FileNotFoundException` for a file that is present under its unescaped name, which is how
+common exporters write any name containing a space. Percent-decoding with no literal fallback would stop
+loading a non-conforming file whose real name contains a `%` sequence, and decoding first changes which file is
+read when both the decoded and the literal names exist; that single collision case is why decoding is an option
+(`Literal` restores the old read) rather than the only behavior, while `data:` URIs, which threw before, change
+no existing read and have no option.
+
+**Generalization.** Any future place that turns a glTF `uri` into bytes (another resource kind, a stream
+overload) must go through `GltfUri.Read` rather than reading the string as a path itself, and any future change
+to how an existing, working `uri` is read must sit behind a `GltfLoadOptions` setting whose default is the
+specification's behavior.
+
 ## What is automated, and where
 
 | Rule | Enforced by | Class / test |
@@ -232,6 +262,8 @@ naming properties of those ancestors, which the fixed bug shows are not a reliab
 | A real end-to-end file with one dense and one sparse morph target (each carrying its own `SUE_tintColor`) resolves correctly through the full `glTF` → `Mesh` → `Primitive` → `MorphTarget` pipeline, and `Mesh.Weights`/`Primitive.Targets` line up one-to-one | xUnit fact | `EndToEndMorphTargetTests` — `LoadsAPrimitiveWithADenseAndASparseMorphTarget` |
 | Generalizing `Accessor`/`BufferView` to support byteOffset and sparse storage did not regress ordinary dense, non-morph content (a real fixture file) | xUnit fact | `RegressionTests` — `StillLoadsTheExistingMonkeyFixtureWithoutMorphTargets` |
 | Skeleton-root inference resolves to the joint outside this skin's own joint set, not the joint whose parent happens to have an identity transform | xUnit fact, real Blender-shaped bone chain | `SkeletonRootInferenceTests` — `InfersTheCorrectRootWhenTwoJointsHaveAnIdentityTransformParent` |
+| Buffer and image uris are percent-decoded (space, non-ASCII, `%25`) with a literal fallback, the decoded file wins when both exist, `Literal` reads only the literal name, and a missing file lists the candidates tried | xUnit facts | `UriResolutionTests` — `ImageUriWithPercent20LoadsTheFileWithASpace`, `BufferUriWithPercent20LoadsTheFileWithASpace`, `NonAsciiUrisLoadWhetherPercentEncodedOrWrittenAsIs`, `EncodedPercentSignLoadsTheFileWithAPercentSign`, `LiteralNameStillLoadsWhenNoDecodedFileExists`, `DecodedFileWinsWhenBothTheDecodedAndTheLiteralFileExist`, `LiteralModeReadsOnlyTheLiteralName`, `MissingFileThrowsAndListsTheCandidatePathsTried`, `RenamedCopyOfTheMonkeyFixtureLoadsThroughAnEscapedUri` |
+| `data:` URIs decode for buffers (through the full pipeline) and images (bytes and media type), percent-encoded data decodes to raw octets, and malformed data URIs throw | xUnit facts | `UriResolutionTests` — `Base64DataUriBufferDecodesThroughTheFullPipeline`, `Base64DataUriImageHasTheDecodedBytesAndMediaType`, `PercentEncodedDataUriDecodesToTheRawOctets`, `MalformedDataUrisThrowWithAMessageNamingTheProblem` |
 
 ## No automated coverage
 

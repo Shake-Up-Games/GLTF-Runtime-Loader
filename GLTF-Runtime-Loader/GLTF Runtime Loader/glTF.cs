@@ -80,7 +80,20 @@ namespace GLTFRuntime
         /// <param name="binDirectory">The directory where bin files referred to in buffers can be found.</param>
         /// <param name="fileName">The name of the GLTF file to load.</param>
         public glTF(string binDirectory, string fileName)
+            : this(binDirectory, fileName, GltfLoadOptions.Default)
         {
+        }
+
+        /// <summary>
+        /// Constructs a new <see cref="glTF"/> instance from the specified gltf file, with explicit load options.
+        /// </summary>
+        /// <param name="binDirectory">The directory where bin files referred to in buffers can be found.</param>
+        /// <param name="fileName">The name of the GLTF file to load.</param>
+        /// <param name="options">How buffer and image uris are resolved. See <see cref="GltfLoadOptions"/>.</param>
+        public glTF(string binDirectory, string fileName, GltfLoadOptions options)
+        {
+            ArgumentNullException.ThrowIfNull(options);
+
             JsonNode root = JsonNode.Parse(File.ReadAllText(Path.Combine(binDirectory, fileName)))!;
 
             Asset = new Asset(root["asset"]!); // Asset is required by the gltf spec
@@ -91,7 +104,7 @@ namespace GLTFRuntime
             else
                 Cameras = new ReadOnlyCollection<Camera>((from c in camerasNode.AsArray() select Camera.Create(c)).ToList());
 
-            Buffer[] buffers = (from b in root["buffers"]!.AsArray() select new Buffer(b, binDirectory)).ToArray();
+            Buffer[] buffers = (from b in root["buffers"]!.AsArray() select new Buffer(b, binDirectory, options)).ToArray();
             BufferView[] bufferViews = (from bv in root["bufferViews"]!.AsArray() select new BufferView(bv, buffers)).ToArray();
             Accessor[] accessors = (from node in root["accessors"]!.AsArray() select new Accessor(node!, bufferViews)).ToArray();
 
@@ -136,7 +149,7 @@ namespace GLTFRuntime
             if (imagesNode == null)
                 Images = new ReadOnlyCollection<Image>(new List<Image>());
             else
-                Images = new((from i in imagesNode.AsArray() select new Image(i, bufferViews, binDirectory)).ToList());
+                Images = new((from i in imagesNode.AsArray() select new Image(i, bufferViews, binDirectory, options)).ToList());
 
             var samplersNode = root["samplers"];
             if (samplersNode == null)

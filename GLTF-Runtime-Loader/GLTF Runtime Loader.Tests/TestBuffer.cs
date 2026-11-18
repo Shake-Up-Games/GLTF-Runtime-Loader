@@ -21,7 +21,7 @@ namespace GLTF_Runtime_Loader.Tests
             File.WriteAllBytes(filePath, bytes);
 
             JsonNode bufferNode = JsonNode.Parse($$"""{ "uri": "data.bin", "byteLength": {{byteLength}} }""")!;
-            Buffer = new GLTFRuntime.Buffer(bufferNode, directory);
+            Buffer = new GLTFRuntime.Buffer(bufferNode, directory, GltfLoadOptions.Default);
         }
 
         public void Dispose()

@@ -21,13 +21,13 @@ namespace GLTFRuntime
         /// </summary>
         internal byte[] Bytes { get; }
 
-        internal Buffer(JsonNode bufferNode, string binDirectory)
+        internal Buffer(JsonNode bufferNode, string binDirectory, GltfLoadOptions options)
         {
             URI = bufferNode["uri"]?.GetValue<string>();
             if (URI == null)
                 throw new NotImplementedException("Non-binary buffers are not yet implemented.");
 
-            Bytes = File.ReadAllBytes(Path.Combine(binDirectory, URI));
+            Bytes = GltfUri.Read(URI, binDirectory, options, probeAsGiven: false).Bytes;
         }
     }
 }
