@@ -18,7 +18,17 @@ namespace GLTFRuntime
         public ReadOnlyCollection<ReadOnlyCollection<float>>? InverseBindMatrices { get; }
 
         /// <summary>
-        /// The index of the node used as a skeleton root.
+        /// The node used as a skeleton root, resolved from the file's <c>skeleton</c> index into its <c>nodes</c> array
+        /// (not into <see cref="Joints"/>), or inferred when the file omits it.
+        /// <para>
+        /// glTF 2.0 section 5.28.2 (skin.skeleton): "The index of the node used as a skeleton root. The node MUST be the
+        /// closest common root of the joints hierarchy or a direct or indirect parent node of the closest common root."
+        /// So this node is not necessarily one of <see cref="Joints"/>.
+        /// </para>
+        /// <para>
+        /// When the file has no <c>skeleton</c>, this is the one joint whose parent is not itself a joint of this skin,
+        /// or null when there is no single such joint.
+        /// </para>
         /// </summary>
         public Node? Skeleton { get; }
 
@@ -59,7 +69,10 @@ namespace GLTFRuntime
 
             int? skeleton = GLTFHelpers.ExtractInt(source, "skeleton");
             if (skeleton.HasValue)
-                Skeleton = Joints[skeleton.Value];
+                // glTF 2.0 section 5.28.2: "The index of the node used as a skeleton root." It indexes the
+                // file's "nodes" array (it can even name a parent of the joints that is not a joint itself),
+                // never this skin's own "joints" list.
+                Skeleton = nodes[skeleton.Value];
             else
                 // No explicit "skeleton" index: infer the root as the joint with no ancestor
                 // *within this skin's own joint list* - i.e. the topmost bone of the hierarchy this
