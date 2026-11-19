@@ -1,6 +1,6 @@
 # GLTF Runtime Loader
 
-**Indexes:** `GLTFLOADER-01`, `GLTFLOADER-02`, `GLTFLOADER-03`, `GLTFLOADER-04`, `GLTFLOADER-05`, `GLTFLOADER-06`, `GLTFLOADER-07`
+**Indexes:** `GLTFLOADER-01`, `GLTFLOADER-02`, `GLTFLOADER-03`, `GLTFLOADER-04`, `GLTFLOADER-05`, `GLTFLOADER-06`, `GLTFLOADER-07`, `GLTFLOADER-08`
 
 This is the behavior contract for the `GLTF Runtime Loader` package (published as
 `ShakeUpGames.GLTF.Runtime`) — a .NET class library that reads a glTF™ 2.0 file and its associated
@@ -223,6 +223,46 @@ adds (skins, node hierarchies, or anything else expressed as a subset of a large
 key off subset membership relative to the element's own ancestors, not off incidental transform/
 naming properties of those ancestors, which the fixed bug shows are not a reliable signal.
 
+## Node transforms — `matrix` is decomposed into translation, rotation and scale
+
+**Rule (`GLTFLOADER-08`).** `Node` (`Node.cs`) exposes a node's local transform only as the optional
+`Translation`, `Rotation` and `Scale` properties. When a node has a `"matrix"` and none of
+`"translation"`, `"rotation"`, `"scale"`, the 16 numbers are decomposed (`Node.Decompose`) into those three
+properties as the node is read, so a `matrix` node no longer loads with all three null (an identity
+transform). The conversion follows glTF 2.0: "A floating-point 4x4 transformation matrix stored in
+column-major order" (section 5.25.4), applied to column vectors (`M * v`), so `m[4 * column + row]` is the
+entry at that row and column and the translation is `m[12]`, `m[13]`, `m[14]`. This is the transpose of a
+row-vector library's layout (MonoGame's `Matrix` is `v * M`, translation in its fourth row); the loader
+reads only glTF's convention and depends on no such type, and a consumer that builds its own matrix from
+the TRS properties must use its own library's order. Each scale is the length of the matching column of the
+upper 3x3, a negative determinant is folded into the X scale, the rotation is the unit quaternion of the
+normalized columns, and a collapsed (zero-length) axis gives an identity rotation. Section 3.5.3 states
+"When matrix is defined, it MUST be decomposable to TRS properties" and "Transformation matrices cannot skew
+or shear"; a skewed matrix is decomposed best-effort, not rejected.
+
+Two spec rules are not enforced, and a file that breaks them loads without error. Section 3.5.3 allows a
+node to define its transform "either by supplying a matrix property, or any of translation, rotation, and
+scale properties"; when a node has both, the explicit TRS properties are used exactly as written and the
+`matrix` is ignored (the behavior of every release before `matrix` was read, so existing files do not
+change). Section 3.5.3 also states "When a node is targeted for animation (referenced by an
+`animation.channel.target`), only TRS properties MAY be present; `matrix` MUST NOT be present"; a `matrix`
+node that an animation targets gets its decomposed values as the static transform, and the channels then
+drive TRS like any other node, so this loader does not read an animation target's `matrix` as an error. A
+`matrix` that does not have exactly 16 numbers throws `InvalidOperationException`, since the schema requires
+`number [16]`.
+
+**Consequence of getting it wrong, in each direction:** Ignoring `matrix` placed every node that an exporter
+wrote with a matrix (common for baked or non-TRS-authored hierarchies) at its parent's origin with no
+rotation or scale. Reading the 16 floats row-major instead of column-major puts the translation in the wrong
+elements and transposes the rotation, which a symmetric test transform would not reveal; the tests therefore
+use a translation, a rotation and a non-uniform scale together and check hand-computed points. Letting
+`matrix` override explicit TRS would silently change the pose of a file that loads correctly today.
+
+**Generalization.** Any future transform input this package reads (an extension that supplies a matrix, for
+example) should be reduced to the same `Translation`/`Rotation`/`Scale` properties, with its matrix
+convention named in a comment next to the conversion, and checked by a test whose expected points are
+computed by hand from an asymmetric transform.
+
 ## Buffer and image URI resolution — percent-decoding and data URIs
 
 **Rule.** A buffer's or image's `uri` becomes bytes in exactly one place, the internal `GltfUri.Read`
@@ -269,6 +309,7 @@ specification's behavior.
 | Generalizing `Accessor`/`BufferView` to support byteOffset and sparse storage did not regress ordinary dense, non-morph content (a real fixture file) | xUnit fact | `RegressionTests` — `StillLoadsTheExistingMonkeyFixtureWithoutMorphTargets` |
 | An explicit `skin.skeleton` is a `nodes` index, not a `joints` index: it resolves to the real root even when that is not the first joint, and to a parent of the joints that is not a joint itself | xUnit facts | `SkeletonExplicitTests` — `ExplicitSkeletonIsANodeIndexNotAJointsIndex`, `ExplicitSkeletonMayBeAParentOfTheJointsThatIsNotAJointItself`, `ExplicitSkeletonPointsAtTheSameNodeObjectAsTheNodesList` |
 | Skeleton-root inference resolves to the joint outside this skin's own joint set, not the joint whose parent happens to have an identity transform | xUnit fact, real Blender-shaped bone chain | `SkeletonRootInferenceTests` — `InfersTheCorrectRootWhenTwoJointsHaveAnIdentityTransformParent` |
+| A node `matrix` (column-major, column vectors) is decomposed into `Translation`/`Rotation`/`Scale`; hand-computed points of an asymmetric translation + rotation + non-uniform scale match, mirrored and identity matrices decompose, explicit TRS wins over a `matrix`, an animation-targeted `matrix` node still loads, and a matrix that is not 16 numbers throws (`GLTFLOADER-08`) | xUnit facts | `NodeMatrixTests` — `MatrixNodeDoesNotLoadAsIdentity`, `MatrixIsDecomposedIntoTranslationRotationAndScale`, `DecomposedTrsMapsPointsLikeTheColumnMajorMatrixDoes`, `MatrixWithARotationAboutXAndAnotherScaleDecomposesToo`, `MirroredMatrixKeepsItsHandednessInTheScale`, `IdentityMatrixDecomposesToTheIdentityTransform`, `NodeWithNoMatrixAndNoTrsStillHasNoTransformProperties`, `ExplicitTrsIsKeptWhenAMatrixIsAlsoPresent`, `AnimationTargetingAMatrixNodeStillLoads`, `MatrixThatIsNotSixteenNumbersThrows` |
 | Buffer and image uris are percent-decoded (space, non-ASCII, `%25`) with a literal fallback, the decoded file wins when both exist, `Literal` reads only the literal name, and a missing file lists the candidates tried | xUnit facts | `UriResolutionTests` — `ImageUriWithPercent20LoadsTheFileWithASpace`, `BufferUriWithPercent20LoadsTheFileWithASpace`, `NonAsciiUrisLoadWhetherPercentEncodedOrWrittenAsIs`, `EncodedPercentSignLoadsTheFileWithAPercentSign`, `LiteralNameStillLoadsWhenNoDecodedFileExists`, `DecodedFileWinsWhenBothTheDecodedAndTheLiteralFileExist`, `LiteralModeReadsOnlyTheLiteralName`, `MissingFileThrowsAndListsTheCandidatePathsTried`, `RenamedCopyOfTheMonkeyFixtureLoadsThroughAnEscapedUri` |
 | `data:` URIs decode for buffers (through the full pipeline) and images (bytes and media type), percent-encoded data decodes to raw octets, and malformed data URIs throw | xUnit facts | `UriResolutionTests` — `Base64DataUriBufferDecodesThroughTheFullPipeline`, `Base64DataUriImageHasTheDecodedBytesAndMediaType`, `PercentEncodedDataUriDecodesToTheRawOctets`, `MalformedDataUrisThrowWithAMessageNamingTheProblem` |
 
