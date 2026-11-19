@@ -189,12 +189,18 @@ without formal registration), should be read only at the specific, narrow locati
 `InvalidOperationException`, naming what was expected) rather than silently tolerating a malformed
 value the way an *absent* or *irrelevant* `extras` object is tolerated.
 
-## Skin skeleton-root inference when `skin.skeleton` is omitted
+## Skin skeleton root: explicit `skin.skeleton`, and inference when it is omitted
 
 **Rule.** `Skin` (`Skin.cs`) reads `Joints` (required), an optional `InverseBindMatrices` accessor
 (when present, also back-fills each joint `Node`'s own `InverseBindMatrices` dictionary, keyed by
 this skin's own index in the file's `"skins"` array), and `Skeleton`. When the file provides an
-explicit `"skeleton"` index, `Skeleton` is simply `Joints[skeleton.Value]`. When it is omitted,
+explicit `"skeleton"` index, `Skeleton` is the node at that index of the file's `"nodes"` array
+(glTF 2.0 section 5.28.2: "The index of the node used as a skeleton root. The node MUST be the
+closest common root of the joints hierarchy or a direct or indirect parent node of the closest
+common root."), so it may be a parent of the joints that is not itself in `Joints`; it is **not**
+`Joints[skeleton.Value]`, an earlier misreading that returned the wrong node whenever the skeleton
+root was not at its own node index within `"joints"` and threw `ArgumentOutOfRangeException` when the
+node index exceeded the joint count (`GLTFLOADER-06`). When it is omitted,
 `Skeleton` is inferred as the one joint in this skin's own `Joints` list whose parent is either
 `null` or **not itself a member of this skin's `Joints` list** —
 `Joints.SingleOrDefault(j => j.Parent is null || !Joints.Contains(j.Parent))`. The inference
@@ -261,6 +267,7 @@ specification's behavior.
 | `extras.SUE_tintColor` defaults a 3-element array's alpha to 1, reads an explicit 4-element alpha, stays null when absent, and rejects any other length | xUnit facts | `MorphTargetTests` — `DefaultsTintColorAlphaToOneWhenOnlyRgbIsGiven`, `ReadsAnExplicitTintColorAlpha`, `LeavesTintColorNullWhenNoExtrasArePresent`, `RejectsATintColorArrayOfTheWrongLength` |
 | A real end-to-end file with one dense and one sparse morph target (each carrying its own `SUE_tintColor`) resolves correctly through the full `glTF` → `Mesh` → `Primitive` → `MorphTarget` pipeline, and `Mesh.Weights`/`Primitive.Targets` line up one-to-one | xUnit fact | `EndToEndMorphTargetTests` — `LoadsAPrimitiveWithADenseAndASparseMorphTarget` |
 | Generalizing `Accessor`/`BufferView` to support byteOffset and sparse storage did not regress ordinary dense, non-morph content (a real fixture file) | xUnit fact | `RegressionTests` — `StillLoadsTheExistingMonkeyFixtureWithoutMorphTargets` |
+| An explicit `skin.skeleton` is a `nodes` index, not a `joints` index: it resolves to the real root even when that is not the first joint, and to a parent of the joints that is not a joint itself | xUnit facts | `SkeletonExplicitTests` — `ExplicitSkeletonIsANodeIndexNotAJointsIndex`, `ExplicitSkeletonMayBeAParentOfTheJointsThatIsNotAJointItself`, `ExplicitSkeletonPointsAtTheSameNodeObjectAsTheNodesList` |
 | Skeleton-root inference resolves to the joint outside this skin's own joint set, not the joint whose parent happens to have an identity transform | xUnit fact, real Blender-shaped bone chain | `SkeletonRootInferenceTests` — `InfersTheCorrectRootWhenTwoJointsHaveAnIdentityTransformParent` |
 | Buffer and image uris are percent-decoded (space, non-ASCII, `%25`) with a literal fallback, the decoded file wins when both exist, `Literal` reads only the literal name, and a missing file lists the candidates tried | xUnit facts | `UriResolutionTests` — `ImageUriWithPercent20LoadsTheFileWithASpace`, `BufferUriWithPercent20LoadsTheFileWithASpace`, `NonAsciiUrisLoadWhetherPercentEncodedOrWrittenAsIs`, `EncodedPercentSignLoadsTheFileWithAPercentSign`, `LiteralNameStillLoadsWhenNoDecodedFileExists`, `DecodedFileWinsWhenBothTheDecodedAndTheLiteralFileExist`, `LiteralModeReadsOnlyTheLiteralName`, `MissingFileThrowsAndListsTheCandidatePathsTried`, `RenamedCopyOfTheMonkeyFixtureLoadsThroughAnEscapedUri` |
 | `data:` URIs decode for buffers (through the full pipeline) and images (bytes and media type), percent-encoded data decodes to raw octets, and malformed data URIs throw | xUnit facts | `UriResolutionTests` — `Base64DataUriBufferDecodesThroughTheFullPipeline`, `Base64DataUriImageHasTheDecodedBytesAndMediaType`, `PercentEncodedDataUriDecodesToTheRawOctets`, `MalformedDataUrisThrowWithAMessageNamingTheProblem` |
